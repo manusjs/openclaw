@@ -45,10 +45,12 @@ const EXAMPLES = [
 ] as const;
 
 export function configureProgramHelp(program: Command, ctx: ProgramContext) {
+  const commit = resolveCommitHash();
+  const versionWithCommit = commit ? `${ctx.programVersion} (${commit})` : ctx.programVersion;
   program
     .name(CLI_NAME)
     .description("")
-    .version(ctx.programVersion)
+    .version(versionWithCommit)
     .option(
       "--dev",
       "Dev profile: isolate state under ~/.openclaw-dev, default gateway port 19001, and shift derived ports (browser/canvas)",
@@ -110,8 +112,7 @@ export function configureProgramHelp(program: Command, ctx: ProgramContext) {
     hasFlag(process.argv, "--version") ||
     hasRootVersionAlias(process.argv)
   ) {
-    const commit = resolveCommitHash();
-    console.log(commit ? `${ctx.programVersion} (${commit})` : ctx.programVersion);
+    console.log(versionWithCommit);
     process.exit(0);
   }
 
