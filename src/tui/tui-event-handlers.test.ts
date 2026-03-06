@@ -426,4 +426,36 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     expect(chatLog.dropAssistant).toHaveBeenCalledWith("run-silent");
     expect(chatLog.finalizeAssistant).not.toHaveBeenCalled();
   });
+
+  it("processes chat events when gateway sends sessionKey with different case than TUI state", () => {
+    // Regression test for #37566: TUI normalises session keys to lowercase
+    // (resolveTuiSessionKey) but gateway push events may carry the original-case
+    // key stored in the session transcript. The case-insensitive comparison
+    // ensures the sending TUI sees its own session's reply.
+    const { state, chatLog, tui, handleChatEvent } = createHandlersHarness({
+      state: { activeChatRunId: null },
+    });
+
+    // state.currentSessionKey is lowercase (e.g. "agent:main:mysession")
+    const uppercaseSessionKey = state.currentSessionKey.toUpperCase();
+
+    handleChatEvent({
+      runId: "run-case-test",
+      sessionKey: uppercaseSessionKey, // gateway sends with different case
+      state: "delta",
+      message: { content: "reply text" },
+    });
+
+    expect(chatLog.updateAssistant).toHaveBeenCalled();
+    expect(tui.requestRender).toHaveBeenCalled();
+
+    handleChatEvent({
+      runId: "run-case-test",
+      sessionKey: uppercaseSessionKey,
+      state: "final",
+      message: { content: "reply text" },
+    });
+
+    expect(chatLog.finalizeAssistant).toHaveBeenCalled();
+  });
 });

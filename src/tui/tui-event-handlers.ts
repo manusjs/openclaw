@@ -152,7 +152,7 @@ export function createEventHandlers(context: EventHandlerContext) {
     }
     const evt = payload as ChatEvent;
     syncSessionKey();
-    if (evt.sessionKey !== state.currentSessionKey) {
+    if (evt.sessionKey?.toLowerCase() !== state.currentSessionKey) {
       return;
     }
     if (finalizedRuns.has(evt.runId)) {
