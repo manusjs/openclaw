@@ -175,6 +175,45 @@ describe("config schema regressions", () => {
     expect(res.ok).toBe(true);
   });
 
+  it("accepts tools.web.fetch.firecrawl config", () => {
+    const res = validateConfigObject({
+      tools: {
+        web: {
+          fetch: {
+            enabled: true,
+            readability: false,
+            firecrawl: {
+              enabled: true,
+              apiKey: "fc-test-key",
+              baseUrl: "https://api.firecrawl.dev",
+              onlyMainContent: true,
+              maxAgeMs: 60000,
+              timeoutSeconds: 30,
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects unknown keys inside tools.web.fetch.firecrawl", () => {
+    const res = validateConfigObject({
+      tools: {
+        web: {
+          fetch: {
+            firecrawl: {
+              bogusKey: true,
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.ok).toBe(false);
+  });
+
   it("rejects browser.extraArgs with non-array value", () => {
     const res = validateConfigObject({
       browser: {
