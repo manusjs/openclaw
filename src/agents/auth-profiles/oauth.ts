@@ -422,8 +422,12 @@ export async function resolveApiKeyForProfile(
         if (fallbackResolved) {
           return fallbackResolved;
         }
-      } catch {
-        // keep original error
+      } catch (fallbackErr) {
+        log.warn("OAuth fallback profile resolution failed", {
+          profileId: fallbackProfileId,
+          provider: cred.provider,
+          error: extractErrorMessage(fallbackErr),
+        });
       }
     }
 
@@ -447,8 +451,12 @@ export async function resolveApiKeyForProfile(
             email: mainCred.email,
           });
         }
-      } catch {
-        // keep original error if main agent fallback also fails
+      } catch (mainFallbackErr) {
+        log.warn("OAuth main-agent credential fallback failed", {
+          profileId,
+          agentDir: params.agentDir,
+          error: extractErrorMessage(mainFallbackErr),
+        });
       }
     }
 
