@@ -564,16 +564,16 @@ describe("chat view", () => {
     expect(modelSelect).not.toBeNull();
     expect(modelSelect?.value).toBe("");
 
-    modelSelect!.value = "gpt-5-mini";
+    modelSelect!.value = "openai/gpt-5-mini";
     modelSelect!.dispatchEvent(new Event("change", { bubbles: true }));
     await flushTasks();
 
     expect(request).toHaveBeenCalledWith("sessions.patch", {
       key: "main",
-      model: "gpt-5-mini",
+      model: "openai/gpt-5-mini",
     });
     expect(request).not.toHaveBeenCalledWith("chat.history", expect.anything());
-    expect(state.sessionsResult?.sessions[0]?.model).toBe("gpt-5-mini");
+    expect(state.sessionsResult?.sessions[0]?.model).toBe("openai/gpt-5-mini");
     vi.unstubAllGlobals();
   });
 
@@ -584,7 +584,7 @@ describe("chat view", () => {
         ok: false,
       } satisfies Partial<Response>),
     );
-    const { state, request } = createChatHeaderState({ model: "gpt-5-mini" });
+    const { state, request } = createChatHeaderState({ model: "openai/gpt-5-mini" });
     const container = document.createElement("div");
     render(renderChatSessionSelect(state), container);
 
@@ -592,7 +592,7 @@ describe("chat view", () => {
       'select[data-chat-model-select="true"]',
     );
     expect(modelSelect).not.toBeNull();
-    expect(modelSelect?.value).toBe("gpt-5-mini");
+    expect(modelSelect?.value).toBe("openai/gpt-5-mini");
 
     modelSelect!.value = "";
     modelSelect!.dispatchEvent(new Event("change", { bubbles: true }));
@@ -603,6 +603,47 @@ describe("chat view", () => {
       model: null,
     });
     expect(state.sessionsResult?.sessions[0]?.model).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it("preserves the full provider/model string when switching models (fix #46179)", async () => {
+    // Regression test: the dropdown must send the full "provider/model" value to
+    // sessions.patch, not just the bare model id.  Previously the option value
+    // was set to entry.id ("claude-opus-4-6") and the gateway re-attached the
+    // *default* provider, yielding e.g. "google-gemini-cli/claude-opus-4-6".
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+      } satisfies Partial<Response>),
+    );
+    const anthropicCatalog: ModelCatalogEntry[] = [
+      { id: "claude-opus-4-6", name: "Claude Opus 4.6", provider: "anthropic" },
+      { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", provider: "anthropic" },
+    ];
+    const { state, request } = createChatHeaderState({ models: anthropicCatalog });
+    const container = document.createElement("div");
+    render(renderChatSessionSelect(state), container);
+
+    const modelSelect = container.querySelector<HTMLSelectElement>(
+      'select[data-chat-model-select="true"]',
+    );
+    expect(modelSelect).not.toBeNull();
+
+    // The option value must be the full provider/model string, not the bare id.
+    const optionValues = Array.from(modelSelect!.querySelectorAll("option")).map((o) => o.value);
+    expect(optionValues).toContain("anthropic/claude-opus-4-6");
+    expect(optionValues).not.toContain("claude-opus-4-6");
+
+    // Selecting the option should send exactly "anthropic/claude-opus-4-6" to the API.
+    modelSelect!.value = "anthropic/claude-opus-4-6";
+    modelSelect!.dispatchEvent(new Event("change", { bubbles: true }));
+    await flushTasks();
+
+    expect(request).toHaveBeenCalledWith("sessions.patch", {
+      key: "main",
+      model: "anthropic/claude-opus-4-6",
+    });
     vi.unstubAllGlobals();
   });
 
@@ -636,7 +677,7 @@ describe("chat view", () => {
     );
     expect(modelSelect).not.toBeNull();
 
-    modelSelect!.value = "gpt-5-mini";
+    modelSelect!.value = "openai/gpt-5-mini";
     modelSelect!.dispatchEvent(new Event("change", { bubbles: true }));
     await flushTasks();
     render(renderChatSessionSelect(state), container);
@@ -644,7 +685,7 @@ describe("chat view", () => {
     const rerendered = container.querySelector<HTMLSelectElement>(
       'select[data-chat-model-select="true"]',
     );
-    expect(rerendered?.value).toBe("gpt-5-mini");
+    expect(rerendered?.value).toBe("openai/gpt-5-mini");
     vi.unstubAllGlobals();
   });
 

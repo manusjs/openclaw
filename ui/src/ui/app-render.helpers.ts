@@ -372,7 +372,14 @@ function buildChatModelOptions(
 
   for (const entry of catalog) {
     const provider = entry.provider?.trim();
-    addOption(entry.id, provider ? `${entry.id} · ${provider}` : entry.id);
+    // Use the full "provider/model" string as the option value so the model-switch API
+    // receives the correct provider prefix.  Only strip the prefix in the display label.
+    const fullId =
+      provider && !entry.id.toLowerCase().startsWith(`${provider.toLowerCase()}/`)
+        ? `${provider}/${entry.id}`
+        : entry.id;
+    const displayId = entry.id.includes("/") ? entry.id.split("/").slice(1).join("/") : entry.id;
+    addOption(fullId, provider ? `${displayId} · ${provider}` : entry.id);
   }
 
   if (currentOverride) {
