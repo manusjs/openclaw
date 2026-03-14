@@ -142,6 +142,14 @@ describe("stripMarkdown", () => {
       ["removes hr ---", "Above\n---\nBelow", "Above\n\nBelow"],
       ["removes hr ***", "Above\n***\nBelow", "Above\n\nBelow"],
       ["strips inline code markers", "Use `const` keyword", "Use const keyword"],
+      // Regression: underscores inside compound words must NOT be stripped (#46185)
+      ["preserves underscores in compound words", "here_is_a_message", "here_is_a_message"],
+      ["still strips real italic _text_", "_italic text_", "italic text"],
+      [
+        "mixed: preserves var underscores and strips italic",
+        "some_var_name and _italic_",
+        "some_var_name and italic",
+      ],
     ] as const;
     for (const [name, input, expected] of cases) {
       expect(stripMarkdown(input), name).toBe(expected);
