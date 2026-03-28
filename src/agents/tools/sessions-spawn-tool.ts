@@ -127,18 +127,13 @@ export function createSessionsSpawnTool(
           }>)
         : undefined;
 
-      if (streamTo && runtime !== "acp") {
-        return jsonResult({
-          status: "error",
-          error: `streamTo is only supported for runtime=acp; got runtime=${runtime}`,
-        });
-      }
-
-      if (resumeSessionId && runtime !== "acp") {
-        return jsonResult({
-          status: "error",
-          error: `resumeSessionId is only supported for runtime=acp; got runtime=${runtime}`,
-        });
+      // ACP-only fields: silently strip when runtime is not "acp" so that
+      // schema-following models can include them without breaking subagent spawns.
+      let effectiveStreamTo: "parent" | undefined = streamTo;
+      let effectiveResumeSessionId: string | undefined = resumeSessionId;
+      if (runtime !== "acp") {
+        effectiveStreamTo = undefined;
+        effectiveResumeSessionId = undefined;
       }
 
       if (runtime === "acp") {
@@ -154,12 +149,12 @@ export function createSessionsSpawnTool(
             task,
             label: label || undefined,
             agentId: requestedAgentId,
-            resumeSessionId,
+            resumeSessionId: effectiveResumeSessionId,
             cwd,
             mode: mode && ACP_SPAWN_MODES.includes(mode) ? mode : undefined,
             thread,
             sandbox,
-            streamTo,
+            streamTo: effectiveStreamTo,
           },
           {
             agentSessionKey: opts?.agentSessionKey,

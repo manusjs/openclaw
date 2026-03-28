@@ -200,7 +200,7 @@ describe("sessions_spawn tool", () => {
     );
   });
 
-  it("rejects resumeSessionId without runtime=acp", async () => {
+  it("silently strips resumeSessionId when runtime is not acp (proceeds as subagent)", async () => {
     const tool = createSessionsSpawnTool({
       agentSessionKey: "agent:main:main",
     });
@@ -210,8 +210,9 @@ describe("sessions_spawn tool", () => {
       resumeSessionId: "7f4a78e0-f6be-43fe-855c-c1c4fd229bc4",
     });
 
-    expect(JSON.stringify(result)).toContain("resumeSessionId is only supported for runtime=acp");
-    expect(hoisted.spawnSubagentDirectMock).not.toHaveBeenCalled();
+    // Should succeed and route to subagent (resumeSessionId silently dropped)
+    expect(result.details).toMatchObject({ status: "accepted" });
+    expect(hoisted.spawnSubagentDirectMock).toHaveBeenCalled();
     expect(hoisted.spawnAcpDirectMock).not.toHaveBeenCalled();
   });
 
@@ -239,7 +240,7 @@ describe("sessions_spawn tool", () => {
     expect(hoisted.spawnSubagentDirectMock).not.toHaveBeenCalled();
   });
 
-  it('rejects streamTo when runtime is not "acp"', async () => {
+  it('silently strips streamTo when runtime is not "acp" and proceeds as subagent', async () => {
     const tool = createSessionsSpawnTool({
       agentSessionKey: "agent:main:main",
     });
@@ -250,13 +251,10 @@ describe("sessions_spawn tool", () => {
       streamTo: "parent",
     });
 
-    expect(result.details).toMatchObject({
-      status: "error",
-    });
-    const details = result.details as { error?: string };
-    expect(details.error).toContain("streamTo is only supported for runtime=acp");
+    // Should succeed — streamTo is silently stripped for non-acp runtimes
+    expect(result.details).toMatchObject({ status: "accepted" });
+    expect(hoisted.spawnSubagentDirectMock).toHaveBeenCalled();
     expect(hoisted.spawnAcpDirectMock).not.toHaveBeenCalled();
-    expect(hoisted.spawnSubagentDirectMock).not.toHaveBeenCalled();
   });
 
   it("keeps attachment content schema unconstrained for llama.cpp grammar safety", () => {
